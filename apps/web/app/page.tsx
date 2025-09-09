@@ -39,14 +39,29 @@ export default function Home() {
   const [fileMeta, setFileMeta] = useState<{ fileId: string; fileName: string } | null>(null);
   const [pageNum, setPageNum] = useState(1);
   const [numPages, setNumPages] = useState(1);
-  const [scale, setScale] = useState(1.25);
+  const [scale, setScale] = useState(1.0);
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [doc, setDoc] = useState<InvoiceDoc | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(35); // percentage
+  const [isResizing, setIsResizing] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
 
   useEffect(() => {
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+  }, []);
+
+  // Handle window resize for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024);
+    };
+    
+    handleResize(); // Set initial value
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -56,21 +71,112 @@ export default function Home() {
       const arrayBuffer = reader.result as ArrayBuffer;
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
+      setPdfDoc(pdf);
       setNumPages(pdf.numPages);
-      renderPage(pdf, pageNum, scale);
+      setPageNum(1); // Reset to first page
     };
     reader.readAsArrayBuffer(pdfFile);
-  }, [pdfFile, pageNum, scale]);
+  }, [pdfFile]);
+
+  useEffect(() => {
+    if (pdfDoc) {
+      renderPage(pdfDoc, pageNum, scale);
+    }
+  }, [pdfDoc, pageNum, scale]);
+
+  // Resize functionality
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || !isLargeScreen) return;
+      
+      const container = document.querySelector('.resize-container') as HTMLElement;
+      if (!container) return;
+      
+      const containerRect = container.getBoundingClientRect();
+      const newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      
+      // Constrain between 30% and 60%
+      const constrainedWidth = Math.min(Math.max(newLeftWidth, 30), 60);
+      setLeftPanelWidth(constrainedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, isLargeScreen]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!pdfDoc) return;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          if (pageNum > 1) setPageNum(pageNum - 1);
+          break;
+        case 'ArrowRight':
+          if (pageNum < numPages) setPageNum(pageNum + 1);
+          break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          setScale((s) => Math.min(5.0, s + 0.25));
+          break;
+        case '-':
+          e.preventDefault();
+          setScale((s) => Math.max(0.5, s - 0.25));
+          break;
+        case '0':
+          e.preventDefault();
+          setScale(1.0);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pdfDoc, pageNum, numPages]);
 
   async function renderPage(pdf: any, pageNumber: number, scaleValue: number) {
-    const page = await pdf.getPage(pageNumber);
-    const viewport = page.getViewport({ scale: scaleValue });
-    const canvas = canvasRef.current!;
-    const context = canvas.getContext('2d')!;
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-    const renderContext = { canvasContext: context, viewport };
-    await page.render(renderContext).promise;
+    if (!canvasRef.current) return;
+    
+    try {
+      const page = await pdf.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: scaleValue });
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d')!;
+      
+      // Set canvas dimensions
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+      
+      // Clear canvas
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Render the page
+      const renderContext = { 
+        canvasContext: context, 
+        viewport: viewport 
+      };
+      
+      await page.render(renderContext).promise;
+    } catch (error) {
+      console.error('Error rendering PDF page:', error);
+    }
   }
 
   async function onUpload() {
@@ -142,16 +248,16 @@ export default function Home() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="resize-container flex flex-col lg:flex-row gap-4 h-full">
           {/* PDF Viewer */}
-          <Card className="h-fit">
+          <Card className="h-fit w-full lg:w-auto" style={{ width: isLargeScreen ? `${leftPanelWidth}%` : '100%' }}>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <FileText className="h-5 w-5" />
                 <span>PDF Viewer</span>
               </CardTitle>
               <CardDescription>
-                Upload and view your invoice PDF files
+                Upload and view your invoice PDF files. Use arrow keys to navigate, +/- to zoom, and 0 to reset zoom.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -168,26 +274,43 @@ export default function Home() {
               </div>
 
               {/* Controls */}
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  onClick={() => setScale((s) => s * 0.9)}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ZoomOut className="h-4 w-4" />
-                </Button>
-                <span className="text-sm font-medium px-2">
-                  {Math.round(scale * 100)}%
-                </span>
-                <Button
-                  onClick={() => setScale((s) => s * 1.1)}
-                  variant="outline"
-                  size="sm"
-                >
-                  <ZoomIn className="h-4 w-4" />
-                </Button>
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Zoom Controls */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setScale((s) => Math.max(0.5, s - 0.25))}
+                    variant="outline"
+                    size="sm"
+                    disabled={!pdfFile || scale <= 0.5}
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => setScale(1.0)}
+                      variant="outline"
+                      size="sm"
+                      disabled={!pdfFile}
+                      className="text-xs"
+                    >
+                      Fit
+                    </Button>
+                    <span className="text-sm font-medium px-2 min-w-[60px] text-center">
+                      {Math.round(scale * 100)}%
+                    </span>
+                  </div>
+                  <Button
+                    onClick={() => setScale((s) => Math.min(5.0, s + 0.25))}
+                    variant="outline"
+                    size="sm"
+                    disabled={!pdfFile || scale >= 5.0}
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </div>
                 
-                <div className="flex items-center space-x-1 ml-4">
+                {/* Page Navigation */}
+                <div className="flex items-center space-x-2">
                   <Button
                     disabled={!pdfFile || pageNum <= 1}
                     onClick={() => setPageNum((p) => Math.max(1, p - 1))}
@@ -196,7 +319,7 @@ export default function Home() {
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  <span className="text-sm font-medium px-2">
+                  <span className="text-sm font-medium px-3 py-1 bg-gray-100 rounded">
                     {pageNum} / {numPages}
                   </span>
                   <Button
@@ -232,17 +355,41 @@ export default function Home() {
               </div>
 
               {/* PDF Canvas */}
-              <div className="border rounded-lg overflow-hidden bg-gray-50">
-                <canvas
-                  ref={canvasRef}
-                  className="w-full h-auto max-h-96 object-contain"
-                />
+              <div className="border rounded-lg overflow-auto bg-gray-50">
+                <div className="flex justify-center p-4">
+                  <canvas
+                    ref={canvasRef}
+                    className="shadow-lg"
+                    style={{ height: 'auto' }}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Resizer - Only show on large screens */}
+          {isLargeScreen && (
+            <div
+              className={`w-1 transition-colors duration-200 flex-shrink-0 group ${
+                isResizing 
+                  ? 'bg-blue-500 cursor-col-resize' 
+                  : 'bg-gray-300 hover:bg-blue-500 cursor-col-resize'
+              }`}
+              onMouseDown={() => setIsResizing(true)}
+              title="Drag to resize panels"
+            >
+              <div className="w-full h-full flex items-center justify-center">
+                <div className={`w-0.5 h-8 rounded-full transition-colors duration-200 ${
+                  isResizing 
+                    ? 'bg-blue-600' 
+                    : 'bg-gray-400 hover:bg-blue-600 group-hover:bg-blue-600'
+                }`}></div>
+              </div>
+            </div>
+          )}
+
           {/* Invoice Form */}
-          <Card className="h-fit">
+          <Card className="h-fit w-full lg:flex-1" style={{ width: isLargeScreen ? `${100 - leftPanelWidth}%` : '100%' }}>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Sparkles className="h-5 w-5" />
@@ -371,8 +518,8 @@ function InvoiceForm({ doc, setDoc, onSave, onDelete, isSaving }: {
         </div>
         <div className="space-y-3">
           {doc.invoice.lineItems.map((li, idx) => (
-            <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 border rounded-lg bg-gray-50">
-              <div className="space-y-1">
+            <div key={idx} className="flex flex-col md:flex-row gap-3 p-3 border rounded-lg bg-gray-50">
+              <div className="flex-[4] space-y-1">
                 <Label className="text-xs">Description</Label>
                 <Input
                   placeholder="Item description"
@@ -380,7 +527,7 @@ function InvoiceForm({ doc, setDoc, onSave, onDelete, isSaving }: {
                   onChange={(e) => updateLine(doc, setDoc, idx, { description: e.target.value })}
                 />
               </div>
-              <div className="space-y-1">
+              <div className="flex-1 space-y-1">
                 <Label className="text-xs">Unit Price</Label>
                 <Input
                   type="number"
@@ -389,7 +536,7 @@ function InvoiceForm({ doc, setDoc, onSave, onDelete, isSaving }: {
                   onChange={(e) => updateLine(doc, setDoc, idx, { unitPrice: e.target.value ? Number(e.target.value) : 0 })}
                 />
               </div>
-              <div className="space-y-1">
+              <div className="flex-1 space-y-1">
                 <Label className="text-xs">Quantity</Label>
                 <Input
                   type="number"
@@ -398,7 +545,7 @@ function InvoiceForm({ doc, setDoc, onSave, onDelete, isSaving }: {
                   onChange={(e) => updateLine(doc, setDoc, idx, { quantity: e.target.value ? Number(e.target.value) : 0 })}
                 />
               </div>
-              <div className="space-y-1">
+              <div className="flex-1 space-y-1">
                 <Label className="text-xs">Total</Label>
                 <Input
                   type="number"
@@ -407,13 +554,13 @@ function InvoiceForm({ doc, setDoc, onSave, onDelete, isSaving }: {
                   onChange={(e) => updateLine(doc, setDoc, idx, { total: e.target.value ? Number(e.target.value) : 0 })}
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 flex flex-col justify-center items-end gap-1">
                 <Label className="text-xs">Actions</Label>
                 <Button
                   onClick={() => deleteLineItem(doc, setDoc, idx)}
                   variant="destructive"
                   size="sm"
-                  className="w-full"
+                  className="w-fit"
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>

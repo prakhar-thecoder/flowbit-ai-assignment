@@ -243,8 +243,8 @@ export default function InvoiceDetail({ params }: { params: { id: string } }) {
           <CardContent>
             <div className="space-y-4">
               {(data.invoice?.lineItems || []).map((li: any, idx: number) => (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg bg-gray-50">
-                  <div className="space-y-2">
+                <div key={idx} className="flex flex-col md:flex-row gap-4 p-4 border rounded-lg bg-gray-50">
+                  <div className="flex-[5] space-y-2">
                     <Label className="text-sm font-medium">Description</Label>
                     <Input
                       placeholder="Item description"
@@ -252,7 +252,7 @@ export default function InvoiceDetail({ params }: { params: { id: string } }) {
                       onChange={(e) => updateLine(idx, { description: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="flex-1 space-y-2">
                     <Label className="text-sm font-medium">Unit Price</Label>
                     <Input
                       type="number"
@@ -261,7 +261,7 @@ export default function InvoiceDetail({ params }: { params: { id: string } }) {
                       onChange={(e) => updateLine(idx, { unitPrice: numOrUndefined(e.target.value) })}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="flex-1 space-y-2">
                     <Label className="text-sm font-medium">Quantity</Label>
                     <Input
                       type="number"
@@ -270,7 +270,7 @@ export default function InvoiceDetail({ params }: { params: { id: string } }) {
                       onChange={(e) => updateLine(idx, { quantity: numOrUndefined(e.target.value) })}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="flex-1 space-y-2">
                     <Label className="text-sm font-medium">Total</Label>
                     <Input
                       type="number"
@@ -279,15 +279,15 @@ export default function InvoiceDetail({ params }: { params: { id: string } }) {
                       onChange={(e) => updateLine(idx, { total: numOrUndefined(e.target.value) })}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 flex flex-col justify-center items-end gap-1">
                     <Label className="text-sm font-medium">Actions</Label>
                     <Button
                       onClick={() => deleteLineItem(idx)}
                       variant="destructive"
                       size="sm"
-                      className="w-full"
+                      className="w-fit"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
