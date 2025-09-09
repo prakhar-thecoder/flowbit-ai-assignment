@@ -9,7 +9,11 @@ import extractRouter from './routes/extract';
 import invoicesRouter from './routes/invoices';
 
 const app = express();
-app.use(cors());
+
+app.use(cors({
+  origin: '*'
+}));
+
 app.use(morgan('dev'));
 app.use(json({ limit: '2mb' }));
 
