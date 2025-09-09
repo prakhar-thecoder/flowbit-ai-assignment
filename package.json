@@ -1,0 +1,16 @@
+{
+  "name": "flowbit-ai-assignment",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run -w apps/api build && npm run -w apps/web build",
+    "dev": "npm run -w apps/api dev & npm run -w apps/web dev",
+    "lint": "npm run -w apps/api lint && npm run -w apps/web lint",
+    "start": "npm run -w apps/api start"
+  }
+}
+
+
