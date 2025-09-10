@@ -7,6 +7,7 @@ import { mongoConnect } from './lib/mongo';
 import uploadRouter from './routes/upload';
 import extractRouter from './routes/extract';
 import invoicesRouter from './routes/invoices';
+import filesRouter from './routes/files';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.get('/health', (_req, res) => {
 app.use('/upload', uploadRouter);
 app.use('/extract', extractRouter);
 app.use('/invoices', invoicesRouter);
+app.use('/files', filesRouter);
 
 const port = process.env.PORT ? Number(process.env.PORT) : 4000;
 

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Eye, FileText, Calendar, DollarSign, Building2, Trash2 } from 'lucide-react';
+import { Search, Eye, FileText, Calendar, DollarSign, Building2, Trash2, Download, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
@@ -131,60 +131,81 @@ export default function InvoicesPage() {
             ) : data && data.length > 0 ? (
               <div className="border rounded-lg overflow-hidden">
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="bg-muted/50">
                     <TableRow>
-                      <TableHead className="w-[200px]">Vendor</TableHead>
-                      <TableHead>Invoice Number</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="w-[150px]">Actions</TableHead>
+                      <TableHead className="w-1/3">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <span>Vendor</span>
+                        </div>
+                      </TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span>Invoice Number</span>
+                        </div>
+                      </TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span>Date</span>
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <span>Total</span>
+                        </div>
+                      </TableHead>
+                      <TableHead className="w-[150px]">
+                        <div className="flex items-center justify-center gap-2">
+                          <Settings className="h-4 w-4 text-muted-foreground" />
+                          <span>Actions</span>
+                        </div>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.map((row: any) => (
                       <TableRow key={row.id} className="hover:bg-muted/50">
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{row.vendor?.name || 'N/A'}</span>
-                          </div>
+                        <TableCell className="w-1/3">
+                          <span className="font-medium">{row.vendor?.name || 'N/A'}</span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
-                            <span>{row.invoice?.number || 'N/A'}</span>
-                          </div>
+                          <span>{row.invoice?.number || 'N/A'}</span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>{row.invoice?.date || 'N/A'}</span>
-                          </div>
+                          <span>{row.invoice?.date || 'N/A'}</span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">
-                              {row.invoice?.total ? `$${row.invoice.total.toLocaleString()}` : 'N/A'}
-                            </span>
-                          </div>
+                          <span className="font-medium">
+                            {row.invoice?.total ? `$${row.invoice.total.toLocaleString()}` : 'N/A'}
+                          </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center justify-center gap-2">
                             <Link href={`/invoices/${row.id}`}>
-                              <Button variant="outline" size="sm" className="flex items-center space-x-1">
-                                <Eye className="h-3 w-3" />
+                            <Button variant="outline" className="flex items-center space-x-1 gap-1">
+                                <Eye className="h-4 w-4" />
                                 <span>View</span>
                               </Button>
                             </Link>
+                            <a href={`${API_BASE}/files/${row.fileId}`} target="_blank" rel="noopener noreferrer">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                aria-label="Download PDF"
+                                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </a>
                             <Button
                               onClick={() => deleteInvoice(row.id)}
                               variant="destructive"
-                              size="sm"
-                              className="flex items-center space-x-1"
+                              size="icon"
+                              aria-label="Delete invoice"
                             >
-                              <Trash2 className="h-3 w-3" />
-                              <span>Delete</span>
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
