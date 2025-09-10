@@ -1,51 +1,49 @@
-# Flowbit AI Assignment
+# Internship Assignment – PDF Viewer + Data Extraction Dashboard
 
-Monorepo with Next.js web app and Node/Express API.
+This repository contains a monorepo implementation of a PDF Review Dashboard with AI-powered invoice data extraction, CRUD, and a modern UI. It follows the given assessment requirements and is deployed on Vercel.
 
-## Apps
-- `apps/web`: Next.js (App Router)
-- `apps/api`: Node.js (TypeScript) + Express + MongoDB + GridFS
+## Deployments
+- Web (Next.js): <your web vercel url>
+- API (Express): <your api vercel url>
 
-## Prerequisites
-- Node 18+
-- MongoDB Atlas URI
-- Gemini API Key
+## Monorepo Structure
+- `apps/web`: Next.js (App Router) + TypeScript + shadcn/ui
+- `apps/api`: Node.js (TypeScript) + Express + MongoDB (GridFS for files)
+- `packages/types` (optional): shared TypeScript types
 
-## Environment
-Create a `.env` at repo root.
+## Core Features
+1) PDF Viewer
+- Upload local PDFs (≤25 MB)
+- In-browser rendering via pdf.js
+- Zoom controls, page navigation, keyboard shortcuts
+- Files stored in MongoDB GridFS
 
-Root `.env` (used by API at runtime and web for API base):
-```
-MONGODB_URI=
-MONGODB_DB=flowbit
-GEMINI_API_KEY=
-PORT=4000
-NEXT_PUBLIC_API_BASE=http://localhost:4000
-```
+2) AI Data Extraction
+- Button: "Extract with AI" (Gemini)
+- Extracts structured invoice data and hydrates the form on the right
 
-## Install
+3) Data Editing & CRUD
+- Edit any extracted field; line items add/remove
+- Save creates/updates invoice records in MongoDB
+- Delete removes invoice records
+- List page with table and search (`vendor.name`, `invoice.number`)
+
+4) Separation of Concerns
+- `apps/web` makes REST calls to `apps/api`
+
+## One-Command Setup
 ```
 npm install
 ```
 
-## Develop
-Run API and Web together:
-```
-npm run dev
-```
-- API: http://localhost:4000
-- Web: http://localhost:3000
+> The project is already deployed on Vercel; no local setup is required to review.
 
-## API Routes
-- POST `/upload` -> form-data `{ file }` => `{ fileId, fileName }`
-- POST `/extract` -> `{ fileId, model: "gemini" }` => extracted JSON
-- GET `/invoices?q=` -> list
-- GET `/invoices/:id`
-- POST `/invoices`
-- PUT `/invoices/:id`
-- DELETE `/invoices/:id`
+## API Documentation
+See DOCS.md for full REST API details and the minimal data shape.
 
-## Notes
-- PDF size limit 25MB
-- Stored in MongoDB GridFS under bucket `pdfs`
-- Extraction uses Gemini 1.5 Flash
+## UI Highlights
+- Split layout: Left = PDF viewer, Right = editable form
+- Resizer: Used to resize the split layout ratio
+- Buttons: Extract, Save, Delete
+- Toast notifications (color-coded), top-right position
+- Table with icons in header, wider Vendor column, debounced search
