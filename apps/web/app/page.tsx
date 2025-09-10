@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Upload, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, FileText, Sparkles, Save, Trash2, Plus, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 type LineItem = { description: string; unitPrice: number; quantity: number; total: number };
 type InvoiceDoc = {
@@ -51,6 +52,18 @@ export default function Home() {
 
   useEffect(() => {
     pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+    
+    // Show welcome message on first load
+    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+    if (!hasSeenWelcome) {
+      setTimeout(() => {
+        toast.info('Welcome to Flowbit AI', {
+          description: 'Upload a PDF invoice and use AI to extract data automatically. Use the resizer to adjust panel sizes.',
+          duration: 6000,
+        });
+        localStorage.setItem('hasSeenWelcome', 'true');
+      }, 1000);
+    }
   }, []);
 
   // Handle window resize for responsive behavior
@@ -180,51 +193,104 @@ export default function Home() {
   }
 
   async function onUpload() {
-    if (!pdfFile) return;
+    if (!pdfFile) {
+      toast.warning('No File Selected', {
+        description: 'Please select a PDF file before uploading.',
+      });
+      return;
+    }
     setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append('file', pdfFile);
       const res = await axios.post(`${API_BASE}/upload`, formData);
       setFileMeta(res.data);
+      toast.success('Upload Successful', {
+        description: `File "${pdfFile.name}" has been uploaded successfully.`,
+      });
+    } catch (error) {
+      toast.error('Upload Failed', {
+        description: 'Failed to upload the PDF file. Please try again.',
+      });
     } finally {
       setIsUploading(false);
     }
   }
 
   async function onExtract() {
-    if (!fileMeta) return;
+    if (!fileMeta) {
+      toast.warning('No File Uploaded', {
+        description: 'Please upload a PDF file before extracting data.',
+      });
+      return;
+    }
     setIsExtracting(true);
     try {
       const res = await axios.post(`${API_BASE}/extract`, { fileId: fileMeta.fileId, model: 'gemini' });
       const now = new Date().toISOString();
       const hydrated: InvoiceDoc = { ...res.data, fileId: fileMeta.fileId, fileName: fileMeta.fileName, createdAt: now };
       setDoc(hydrated);
+      toast.success('Extraction Successful', {
+        description: 'Invoice data has been extracted successfully using AI.',
+      });
+    } catch (error) {
+      toast.error('Extraction Failed', {
+        description: 'Failed to extract data from the PDF. Please try again.',
+      });
     } finally {
       setIsExtracting(false);
     }
   }
 
   async function onSave() {
-    if (!doc) return;
+    if (!doc) {
+      toast.warning('No Data to Save', {
+        description: 'Please extract invoice data before saving.',
+      });
+      return;
+    }
     setIsSaving(true);
     try {
       if (doc.id) {
         const res = await axios.put(`${API_BASE}/invoices/${doc.id}`, doc);
         setDoc(res.data);
+        toast.success('Invoice Updated', {
+          description: 'Invoice has been updated successfully.',
+        });
       } else {
         const res = await axios.post(`${API_BASE}/invoices`, doc);
         setDoc(res.data);
+        toast.success('Invoice Saved', {
+          description: 'Invoice has been saved successfully.',
+        });
       }
+    } catch (error) {
+      toast.error('Save Failed', {
+        description: 'Failed to save the invoice. Please try again.',
+      });
     } finally {
       setIsSaving(false);
     }
   }
 
   async function onDelete() {
-    if (!doc?.id) return;
-    await axios.delete(`${API_BASE}/invoices/${doc.id}`);
-    setDoc(null);
+    if (!doc?.id) {
+      toast.warning('No Invoice to Delete', {
+        description: 'No invoice is currently loaded.',
+      });
+      return;
+    }
+    try {
+      await axios.delete(`${API_BASE}/invoices/${doc.id}`);
+      setDoc(null);
+      toast.success('Invoice Deleted', {
+        description: 'Invoice has been deleted successfully.',
+      });
+    } catch (error) {
+      toast.error('Delete Failed', {
+        description: 'Failed to delete the invoice. Please try again.',
+      });
+    }
   }
 
   return (
@@ -268,7 +334,15 @@ export default function Home() {
                   id="pdf-upload"
                   type="file"
                   accept="application/pdf"
-                  onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setPdfFile(file);
+                    if (file) {
+                      toast.info('File Selected', {
+                        description: `"${file.name}" is ready for upload and extraction.`,
+                      });
+                    }
+                  }}
                   className="cursor-pointer"
                 />
               </div>

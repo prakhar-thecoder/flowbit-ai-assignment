@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Search, Eye, FileText, Calendar, DollarSign, Building2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
 const fetcher = (url: string) => axios.get(url).then((r) => r.data);
@@ -21,8 +22,14 @@ export default function InvoicesPage() {
     try {
       await axios.delete(`${API_BASE}/invoices/${id}`);
       mutate(); // Refresh the list
+      toast.success('Invoice Deleted', {
+        description: 'Invoice has been deleted successfully.',
+      });
     } catch (error) {
       console.error('Failed to delete invoice:', error);
+      toast.error('Delete Failed', {
+        description: 'Failed to delete the invoice. Please try again.',
+      });
     }
   }
 

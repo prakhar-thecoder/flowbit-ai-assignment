@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Trash2, Plus, Building2, FileText, Calendar, DollarSign, Hash } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
 const fetcher = (url: string) => axios.get(url).then((r) => r.data);
@@ -25,6 +26,13 @@ export default function InvoiceDetail({ params }: { params: { id: string } }) {
     try {
       const res = await axios.put(`${API_BASE}/invoices/${params.id}`, data);
       mutate(res.data);
+      toast.success('Invoice Updated', {
+        description: 'Invoice has been updated successfully.',
+      });
+    } catch (error) {
+      toast.error('Update Failed', {
+        description: 'Failed to update the invoice. Please try again.',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -35,7 +43,16 @@ export default function InvoiceDetail({ params }: { params: { id: string } }) {
     setIsDeleting(true);
     try {
       await axios.delete(`${API_BASE}/invoices/${params.id}`);
-      router.push('/invoices');
+      toast.success('Invoice Deleted', {
+        description: 'Invoice has been deleted successfully. Redirecting...',
+      });
+      setTimeout(() => {
+        router.push('/invoices');
+      }, 1500);
+    } catch (error) {
+      toast.error('Delete Failed', {
+        description: 'Failed to delete the invoice. Please try again.',
+      });
     } finally {
       setIsDeleting(false);
     }
