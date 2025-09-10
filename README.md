@@ -1,6 +1,6 @@
 # Internship Assignment – PDF Viewer + Data Extraction Dashboard
 
-<video src="demo-video.mp4" controls></video>
+[![Watch the demo](https://img.youtube.com/vi/jN5OqDhyVrE/0.jpg)](https://youtu.be/jN5OqDhyVrE)
 
 This repository contains a monorepo implementation of a PDF Review Dashboard with AI-powered invoice data extraction, CRUD, and a modern UI. It follows the given assessment requirements and is deployed on Vercel.
 
