@@ -249,6 +249,13 @@ export default function Home() {
       });
       return;
     }
+    // Require vendor name and invoice number
+    if (!doc.vendor?.name?.trim() || !doc.invoice?.number?.trim()) {
+      toast.warning('Missing required fields', {
+        description: 'Vendor name and invoice number are required to save.',
+      });
+      return;
+    }
     setIsSaving(true);
     try {
       if (doc.id) {

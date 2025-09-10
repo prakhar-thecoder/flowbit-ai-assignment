@@ -22,6 +22,15 @@ export default function InvoiceDetail({ params }: { params: { id: string } }) {
 
   async function onSave() {
     if (!data) return;
+    // Require vendor name and invoice number
+    const vendorName = data.vendor?.name?.trim();
+    const invoiceNumber = data.invoice?.number?.trim();
+    if (!vendorName || !invoiceNumber) {
+      toast.warning('Missing required fields', {
+        description: 'Vendor name and invoice number are required to save.',
+      });
+      return;
+    }
     setIsSaving(true);
     try {
       const res = await axios.put(`${API_BASE}/invoices/${params.id}`, data);
