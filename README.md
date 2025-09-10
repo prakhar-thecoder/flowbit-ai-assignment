@@ -3,8 +3,8 @@
 This repository contains a monorepo implementation of a PDF Review Dashboard with AI-powered invoice data extraction, CRUD, and a modern UI. It follows the given assessment requirements and is deployed on Vercel.
 
 ## Deployments
-- Web (Next.js): <your web vercel url>
-- API (Express): <your api vercel url>
+- Web (Next.js): https://flowbit-ai-assignment-web.vercel.app/
+- API (Express): https://flowbit-ai-assignment-api.vercel.app/
 
 ## Monorepo Structure
 - `apps/web`: Next.js (App Router) + TypeScript + shadcn/ui
