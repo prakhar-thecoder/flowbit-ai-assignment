@@ -1,7 +1,7 @@
 "use client";
 import useSWR from 'swr';
 import axios from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,17 @@ const fetcher = (url: string) => axios.get(url).then((r) => r.data);
 
 export default function InvoicesPage() {
   const [q, setQ] = useState('');
-  const { data, mutate, isLoading } = useSWR(`${API_BASE}/invoices${q ? `?q=${encodeURIComponent(q)}` : ''}`, fetcher);
+  const [debouncedQ, setDebouncedQ] = useState('');
+
+  // Debounce the search query by 1 second
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedQ(q);
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [q]);
+
+  const { data, mutate, isLoading } = useSWR(`${API_BASE}/invoices${debouncedQ ? `?q=${encodeURIComponent(debouncedQ)}` : ''}`, fetcher);
 
   async function deleteInvoice(id: string) {
     if (!confirm('Are you sure you want to delete this invoice?')) return;
@@ -76,8 +86,8 @@ export default function InvoicesPage() {
                   className="pl-10"
                 />
               </div>
-              <Button onClick={() => mutate()} variant="outline">
-                Search
+              <Button onClick={() => mutate()} variant="outline" disabled={q !== debouncedQ}>
+                {q !== debouncedQ ? 'Typing…' : 'Search'}
               </Button>
             </div>
 
